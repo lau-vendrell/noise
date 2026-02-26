@@ -5,6 +5,8 @@ const BACKGROUND_RGB = '23, 23, 23';
 const OVERLAY_GRID_WIDTH = 120;
 const OVERLAY_GRID_HEIGHT = 80;
 const OVERLAY_MAX_COMPONENT = 420;
+const HOVER_DECAY_MAX = 0.94;
+const HOVER_STRENGTH_FACTOR = 0.45;
 
 export class ParticleSystem {
   private readonly canvas: HTMLCanvasElement;
@@ -78,6 +80,15 @@ export class ParticleSystem {
     this.ctx.globalAlpha = 1;
     this.ctx.fillStyle = `rgb(${BACKGROUND_RGB})`;
     this.ctx.fillRect(0, 0, this.width, this.height);
+  }
+
+  resetDrawnFlow(): void {
+    this.overlayVx.fill(0);
+    this.overlayVy.fill(0);
+    this.hoverVx.fill(0);
+    this.hoverVy.fill(0);
+    this.pointerDown = false;
+    this.pointerTracked = false;
   }
 
   resetParticles(): void {
@@ -237,7 +248,6 @@ export class ParticleSystem {
         this.paintHoverOverlay(pos.x, pos.y, dx, dy);
         return;
       }
-
       if (!this.settings.drawFlow) return;
       this.paintPersistentOverlay(pos.x, pos.y, dx, dy);
     });
@@ -265,7 +275,7 @@ export class ParticleSystem {
   }
 
   private paintHoverOverlay(x: number, y: number, dx: number, dy: number): void {
-    this.paintOverlayInto(this.hoverVx, this.hoverVy, x, y, dx, dy);
+    this.paintOverlayInto(this.hoverVx, this.hoverVy, x, y, dx * HOVER_STRENGTH_FACTOR, dy * HOVER_STRENGTH_FACTOR);
   }
 
   private paintOverlayInto(
@@ -307,19 +317,19 @@ export class ParticleSystem {
     }
   }
 
-  private decayHoverOverlay(): void {
-    const decay = this.settings.overlayDecay;
-    for (let i = 0; i < this.hoverVx.length; i += 1) {
-      this.hoverVx[i] *= decay;
-      this.hoverVy[i] *= decay;
-    }
-  }
-
   private sampleOverlay(x: number, y: number): { vx: number; vy: number } {
     const cx = Math.min(OVERLAY_GRID_WIDTH - 1, Math.max(0, Math.floor((x / this.width) * OVERLAY_GRID_WIDTH)));
     const cy = Math.min(OVERLAY_GRID_HEIGHT - 1, Math.max(0, Math.floor((y / this.height) * OVERLAY_GRID_HEIGHT)));
     const idx = cy * OVERLAY_GRID_WIDTH + cx;
     return { vx: this.overlayVx[idx] + this.hoverVx[idx], vy: this.overlayVy[idx] + this.hoverVy[idx] };
+  }
+
+  private decayHoverOverlay(): void {
+    const decay = Math.min(HOVER_DECAY_MAX, this.settings.overlayDecay);
+    for (let i = 0; i < this.hoverVx.length; i += 1) {
+      this.hoverVx[i] *= decay;
+      this.hoverVy[i] *= decay;
+    }
   }
 
   private clampOverlayComponent(value: number): number {

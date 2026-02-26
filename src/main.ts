@@ -29,6 +29,7 @@ const controls = createControls(panelRoot, state, {
     controls.sync(state);
   },
   onReset() {
+    sim.resetDrawnFlow();
     sim.resetParticles();
     sim.clear();
   },
@@ -59,6 +60,7 @@ window.addEventListener('keydown', (event) => {
   }
 
   if (key === 'r') {
+    sim.resetDrawnFlow();
     sim.resetParticles();
     sim.clear();
     return;
