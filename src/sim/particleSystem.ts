@@ -1,28 +1,55 @@
 import { ValueNoise3D } from './noise';
-import { DEFAULT_SETTINGS, PARTICLE_LIMITS, SimulationSettings } from './types';
+import { DEFAULT_SETTINGS, RuntimeSimulationControls, SimulationSettings, ThemeMode } from './simulationState';
 
-const BACKGROUND_RGB = '23, 23, 23';
-const OVERLAY_GRID_WIDTH = 120;
-const OVERLAY_GRID_HEIGHT = 80;
-const OVERLAY_MAX_COMPONENT = 420;
-const HOVER_DECAY_MAX = 0.94;
-const HOVER_STRENGTH_FACTOR = 0.45;
 const FLOCK_CELL_SIZE = 36;
 const FLOCK_SEPARATION_RADIUS = 26;
 const FLOCK_SEPARATION_STRENGTH = 44;
 const FLOCK_MAX_NEIGHBORS = 20;
+const MAX_PARTICLE_POOL = 15000;
+const MIN_ACTIVE_PARTICLES = 300;
+const HOVER_RADIUS_FACTOR = 5.2;
+const PRESS_RADIUS_FACTOR = 3.4;
+const HOVER_DECAY = 1.2;
+const HOVER_MIN_SPEED = 0.8;
+
+const THEME_PALETTE: Record<ThemeMode, { background: string; stroke: string }> = {
+  dark: {
+    background: '23, 23, 24',
+    stroke: '#efe7d3'
+  },
+  sand: {
+    background: '195, 190, 183',
+    stroke: '#444444'
+  }
+};
+
+function clampRuntime(settings: RuntimeSimulationControls): RuntimeSimulationControls {
+  return {
+    activeParticles: Math.min(MAX_PARTICLE_POOL, Math.max(MIN_ACTIVE_PARTICLES, Math.round(settings.activeParticles))),
+    speed: Math.min(240, Math.max(1, settings.speed)),
+    noiseScale: Math.min(0.008, Math.max(0.0005, settings.noiseScale)),
+    noiseStrength: Math.min(4, Math.max(0.2, settings.noiseStrength)),
+    turbulence: Math.min(6, Math.max(1, Math.round(settings.turbulence))),
+    trail: Math.min(1, Math.max(0, settings.trail))
+  };
+}
 
 export class ParticleSystem {
   private readonly canvas: HTMLCanvasElement;
   private readonly ctx: CanvasRenderingContext2D;
 
   private settings: SimulationSettings;
+  private runtime: RuntimeSimulationControls;
   private noise: ValueNoise3D;
 
   private width = 1;
   private height = 1;
   private dpr = 1;
 
+  private backgroundRgb = THEME_PALETTE.dark.background;
+  private strokeColor = THEME_PALETTE.dark.stroke;
+
+  private poolSize = 1;
   private positionsX: Float32Array;
   private positionsY: Float32Array;
   private readPositionsX: Float32Array;
@@ -30,18 +57,19 @@ export class ParticleSystem {
 
   private elapsed = 0;
   private lastTs = 0;
-  private overlayVx: Float32Array;
-  private overlayVy: Float32Array;
-  private hoverVx: Float32Array;
-  private hoverVy: Float32Array;
   private flockCols = 1;
   private flockRows = 1;
   private flockHead: Int32Array;
   private flockNext: Int32Array;
   private pointerDown = false;
   private pointerTracked = false;
-  private lastPointerX = 0;
-  private lastPointerY = 0;
+  private pointerX = 0;
+  private pointerY = 0;
+  private pointerDirX = 0;
+  private pointerDirY = 0;
+  private hoverEnergy = 0;
+  private interactionVx = 0;
+  private interactionVy = 0;
   private separationVx = 0;
   private separationVy = 0;
 
@@ -54,18 +82,23 @@ export class ParticleSystem {
     this.canvas = canvas;
     this.ctx = ctx;
     this.settings = { ...DEFAULT_SETTINGS, ...initialSettings };
+    this.runtime = clampRuntime({
+      activeParticles: this.settings.particleCount,
+      speed: this.settings.speed,
+      noiseScale: this.settings.noiseScale,
+      noiseStrength: this.settings.noiseStrength,
+      turbulence: this.settings.turbulence,
+      trail: this.settings.trail
+    });
     this.noise = new ValueNoise3D(this.settings.seed);
 
-    this.positionsX = new Float32Array(this.settings.particleCount);
-    this.positionsY = new Float32Array(this.settings.particleCount);
-    this.readPositionsX = new Float32Array(this.settings.particleCount);
-    this.readPositionsY = new Float32Array(this.settings.particleCount);
-    this.overlayVx = new Float32Array(OVERLAY_GRID_WIDTH * OVERLAY_GRID_HEIGHT);
-    this.overlayVy = new Float32Array(OVERLAY_GRID_WIDTH * OVERLAY_GRID_HEIGHT);
-    this.hoverVx = new Float32Array(OVERLAY_GRID_WIDTH * OVERLAY_GRID_HEIGHT);
-    this.hoverVy = new Float32Array(OVERLAY_GRID_WIDTH * OVERLAY_GRID_HEIGHT);
+    this.poolSize = this.runtime.activeParticles;
+    this.positionsX = new Float32Array(this.poolSize);
+    this.positionsY = new Float32Array(this.poolSize);
+    this.readPositionsX = new Float32Array(this.poolSize);
+    this.readPositionsY = new Float32Array(this.poolSize);
     this.flockHead = new Int32Array(1);
-    this.flockNext = new Int32Array(this.settings.particleCount);
+    this.flockNext = new Int32Array(this.poolSize);
 
     this.resize(window.innerWidth, window.innerHeight);
     this.resetParticles();
@@ -75,6 +108,13 @@ export class ParticleSystem {
 
   getSettings(): SimulationSettings {
     return { ...this.settings };
+  }
+
+  setTheme(mode: ThemeMode): void {
+    const palette = THEME_PALETTE[mode];
+    this.backgroundRgb = palette.background;
+    this.strokeColor = palette.stroke;
+    this.clear();
   }
 
   resize(width: number, height: number): void {
@@ -95,22 +135,20 @@ export class ParticleSystem {
 
   clear(): void {
     this.ctx.globalAlpha = 1;
-    this.ctx.fillStyle = `rgb(${BACKGROUND_RGB})`;
+    this.ctx.fillStyle = `rgb(${this.backgroundRgb})`;
     this.ctx.fillRect(0, 0, this.width, this.height);
   }
 
   resetDrawnFlow(): void {
-    this.overlayVx.fill(0);
-    this.overlayVy.fill(0);
-    this.hoverVx.fill(0);
-    this.hoverVy.fill(0);
     this.pointerDown = false;
     this.pointerTracked = false;
+    this.hoverEnergy = 0;
+    this.pointerDirX = 0;
+    this.pointerDirY = 0;
   }
 
   resetParticles(): void {
-    const count = this.settings.particleCount;
-    for (let i = 0; i < count; i += 1) {
+    for (let i = 0; i < this.poolSize; i += 1) {
       this.positionsX[i] = Math.random() * this.width;
       this.positionsY[i] = Math.random() * this.height;
     }
@@ -126,16 +164,17 @@ export class ParticleSystem {
     this.settings.paused = paused;
   }
 
+  setRuntimeControls(next: Partial<RuntimeSimulationControls>): void {
+    this.runtime = clampRuntime({ ...this.runtime, ...next });
+    this.ensurePoolSize(this.runtime.activeParticles);
+  }
+
   setSettings(next: Partial<SimulationSettings>, clearAfter = false): void {
-    const prevCount = this.settings.particleCount;
     const prevSeed = this.settings.seed;
     this.settings = { ...this.settings, ...next };
 
-    this.settings.particleCount = Math.min(
-      PARTICLE_LIMITS.max,
-      Math.max(PARTICLE_LIMITS.min, Math.round(this.settings.particleCount))
-    );
-    this.settings.speed = Math.min(120, Math.max(5, this.settings.speed));
+    this.settings.particleCount = Math.min(MAX_PARTICLE_POOL, Math.max(300, Math.round(this.settings.particleCount)));
+    this.settings.speed = Math.min(220, Math.max(5, this.settings.speed));
     this.settings.noiseScale = Math.min(0.008, Math.max(0.0005, this.settings.noiseScale));
     this.settings.noiseStrength = Math.min(4, Math.max(0.2, this.settings.noiseStrength));
     this.settings.turbulence = Math.min(6, Math.max(1, Math.round(this.settings.turbulence)));
@@ -147,16 +186,6 @@ export class ParticleSystem {
 
     if (this.settings.seed !== prevSeed) {
       this.noise = new ValueNoise3D(this.settings.seed);
-      clearAfter = true;
-    }
-
-    if (prevCount !== this.settings.particleCount) {
-      this.positionsX = new Float32Array(this.settings.particleCount);
-      this.positionsY = new Float32Array(this.settings.particleCount);
-      this.readPositionsX = new Float32Array(this.settings.particleCount);
-      this.readPositionsY = new Float32Array(this.settings.particleCount);
-      this.flockNext = new Int32Array(this.settings.particleCount);
-      this.resetParticles();
       clearAfter = true;
     }
 
@@ -180,35 +209,38 @@ export class ParticleSystem {
     const dt = dtMs / 1000;
 
     this.elapsed += dt;
-    this.decayHoverOverlay();
     this.readPositionsX.set(this.positionsX);
     this.readPositionsY.set(this.positionsY);
     this.rebuildFlockIndex();
 
-    const fadeAlpha = Math.max(0.02, 1 - this.settings.trail);
+    const fadeAlpha = Math.max(0.02, 1 - this.runtime.trail);
     this.ctx.globalAlpha = fadeAlpha;
-    this.ctx.fillStyle = `rgb(${BACKGROUND_RGB})`;
+    this.ctx.fillStyle = `rgb(${this.backgroundRgb})`;
     this.ctx.fillRect(0, 0, this.width, this.height);
 
     this.ctx.globalAlpha = 0.9;
-    this.ctx.strokeStyle = '#efe7d3';
+    this.ctx.strokeStyle = this.strokeColor;
     this.ctx.beginPath();
 
-    const count = this.settings.particleCount;
-    const speed = this.settings.speed;
-    const scale = this.settings.noiseScale;
-    const strength = this.settings.noiseStrength;
-    const turbulence = this.settings.turbulence;
+    const count = Math.min(this.runtime.activeParticles, this.poolSize);
+    const speed = this.runtime.speed;
+    const scale = this.runtime.noiseScale;
+    const strength = this.runtime.noiseStrength;
+    const turbulence = this.runtime.turbulence;
 
     for (let i = 0; i < count; i += 1) {
-      let x = this.readPositionsX[i];
-      let y = this.readPositionsY[i];
+      const x = this.readPositionsX[i];
+      const y = this.readPositionsY[i];
 
       const angle = this.noise.flowAngle(x, y, this.elapsed, scale, turbulence, strength);
-      const overlay = this.sampleOverlay(x, y);
-      let vx = Math.cos(angle) * speed + overlay.vx;
-      let vy = Math.sin(angle) * speed + overlay.vy;
-      this.computeSeparationForce(i, x, y);
+      let vx = Math.cos(angle) * speed;
+      let vy = Math.sin(angle) * speed;
+
+      this.computePointerInteractionForce(x, y);
+      vx += this.interactionVx;
+      vy += this.interactionVy;
+
+      this.computeSeparationForce(i, x, y, count);
       vx += this.separationVx;
       vy += this.separationVy;
       const nx = x + vx * dt;
@@ -244,6 +276,98 @@ export class ParticleSystem {
     }
 
     this.ctx.stroke();
+    this.hoverEnergy *= HOVER_DECAY;
+  }
+
+  private computePointerInteractionForce(x: number, y: number): void {
+    if (!this.pointerTracked) {
+      this.interactionVx = 0;
+      this.interactionVy = 0;
+      return;
+    }
+
+    const dx = this.pointerX - x;
+    const dy = this.pointerY - y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 0.0001) {
+      this.interactionVx = 0;
+      this.interactionVy = 0;
+      return;
+    }
+
+    if (this.pointerDown) {
+      // Press: stronger vortex with tangential dominance around pointer.
+      const influenceRadius = this.settings.mouseRadius * PRESS_RADIUS_FACTOR;
+      if (dist > influenceRadius) {
+        this.interactionVx = 0;
+        this.interactionVy = 0;
+        return;
+      }
+
+      const invDist = 1 / dist;
+      const falloff = (1 - dist / influenceRadius) ** 2;
+      const tangentialX = -dy * invDist;
+      const tangentialY = dx * invDist;
+      const radialX = dx * invDist;
+      const radialY = dy * invDist;
+
+      const orbitalGain = this.settings.mouseStrength * 220 * falloff;
+      const radialGain = orbitalGain * -0.22;
+      this.interactionVx = tangentialX * orbitalGain + radialX * radialGain;
+      this.interactionVy = tangentialY * orbitalGain + radialY * radialGain;
+      return;
+    }
+
+    // Hover: short-lived directional hint that fades quickly and never accumulates.
+    const influenceRadius = this.settings.mouseRadius * HOVER_RADIUS_FACTOR;
+    if (dist > influenceRadius || this.hoverEnergy < 0.005) {
+      this.interactionVx = 0;
+      this.interactionVy = 0;
+      return;
+    }
+
+    const invDist = 1 / dist;
+    const falloff = (1 - dist / influenceRadius) ** 2;
+    const radialX = dx * invDist;
+    const radialY = dy * invDist;
+
+    const alignGain = this.settings.mouseStrength * 82 * this.hoverEnergy * falloff;
+    const radialGain = this.settings.mouseStrength * 18 * this.hoverEnergy * falloff;
+    this.interactionVx = this.pointerDirX * alignGain + radialX * radialGain;
+    this.interactionVy = this.pointerDirY * alignGain + radialY * radialGain;
+  }
+
+  private ensurePoolSize(required: number): void {
+    if (required <= this.poolSize) return;
+
+    const nextSize = Math.min(MAX_PARTICLE_POOL, Math.max(required, this.poolSize + 1000));
+    if (nextSize === this.poolSize) return;
+
+    const nextX = new Float32Array(nextSize);
+    const nextY = new Float32Array(nextSize);
+    const nextReadX = new Float32Array(nextSize);
+    const nextReadY = new Float32Array(nextSize);
+    const nextFlock = new Int32Array(nextSize);
+
+    nextX.set(this.positionsX);
+    nextY.set(this.positionsY);
+    nextReadX.set(this.readPositionsX);
+    nextReadY.set(this.readPositionsY);
+    nextFlock.set(this.flockNext);
+
+    for (let i = this.poolSize; i < nextSize; i += 1) {
+      nextX[i] = Math.random() * this.width;
+      nextY[i] = Math.random() * this.height;
+      nextReadX[i] = nextX[i];
+      nextReadY[i] = nextY[i];
+    }
+
+    this.poolSize = nextSize;
+    this.positionsX = nextX;
+    this.positionsY = nextY;
+    this.readPositionsX = nextReadX;
+    this.readPositionsY = nextReadY;
+    this.flockNext = nextFlock;
   }
 
   private bindPointerEvents(): void {
@@ -252,41 +376,50 @@ export class ParticleSystem {
       const pos = this.getPointerPosition(event);
       this.pointerDown = true;
       this.pointerTracked = true;
-      this.lastPointerX = pos.x;
-      this.lastPointerY = pos.y;
+      this.pointerX = pos.x;
+      this.pointerY = pos.y;
+      this.hoverEnergy = 0;
       this.canvas.setPointerCapture(event.pointerId);
     });
 
     this.canvas.addEventListener('pointermove', (event) => {
       const pos = this.getPointerPosition(event);
-      if (!this.pointerTracked) {
-        this.lastPointerX = pos.x;
-        this.lastPointerY = pos.y;
-        this.pointerTracked = true;
-        return;
-      }
-      const dx = pos.x - this.lastPointerX;
-      const dy = pos.y - this.lastPointerY;
-      this.lastPointerX = pos.x;
-      this.lastPointerY = pos.y;
+      const dx = pos.x - this.pointerX;
+      const dy = pos.y - this.pointerY;
+      const speed = Math.hypot(dx, dy);
+      this.pointerTracked = true;
+      this.pointerX = pos.x;
+      this.pointerY = pos.y;
 
-      if (!this.pointerDown) {
-        this.paintHoverOverlay(pos.x, pos.y, dx, dy);
-        return;
+      if (!this.pointerDown && speed > HOVER_MIN_SPEED) {
+        const invSpeed = 1 / speed;
+        const dirX = dx * invSpeed;
+        const dirY = dy * invSpeed;
+        this.pointerDirX = this.pointerDirX * 0.72 + dirX * 0.28;
+        this.pointerDirY = this.pointerDirY * 0.72 + dirY * 0.28;
+        this.hoverEnergy = Math.min(1, this.hoverEnergy * 0.35 + Math.min(1, speed / 28) * 0.65);
       }
-      if (!this.settings.drawFlow) return;
-      this.paintPersistentOverlay(pos.x, pos.y, dx, dy);
     });
 
-    const stopDrawing = () => {
+    this.canvas.addEventListener('pointerup', () => {
+      this.pointerDown = false;
+    });
+
+    this.canvas.addEventListener('pointercancel', () => {
       this.pointerDown = false;
       this.pointerTracked = false;
-    };
+      this.hoverEnergy = 0;
+    });
 
-    this.canvas.addEventListener('pointerup', stopDrawing);
-    this.canvas.addEventListener('pointercancel', stopDrawing);
-    this.canvas.addEventListener('pointerleave', stopDrawing);
-    window.addEventListener('pointerup', stopDrawing);
+    this.canvas.addEventListener('pointerleave', () => {
+      this.pointerDown = false;
+      this.pointerTracked = false;
+      this.hoverEnergy = 0;
+    });
+
+    window.addEventListener('pointerup', () => {
+      this.pointerDown = false;
+    });
   }
 
   private getPointerPosition(event: PointerEvent): { x: number; y: number } {
@@ -294,60 +427,6 @@ export class ParticleSystem {
     const x = ((event.clientX - rect.left) / rect.width) * this.width;
     const y = ((event.clientY - rect.top) / rect.height) * this.height;
     return { x, y };
-  }
-
-  private paintPersistentOverlay(x: number, y: number, dx: number, dy: number): void {
-    this.paintOverlayInto(this.overlayVx, this.overlayVy, x, y, dx, dy);
-  }
-
-  private paintHoverOverlay(x: number, y: number, dx: number, dy: number): void {
-    this.paintOverlayInto(this.hoverVx, this.hoverVy, x, y, dx * HOVER_STRENGTH_FACTOR, dy * HOVER_STRENGTH_FACTOR);
-  }
-
-  private paintOverlayInto(
-    targetVx: Float32Array,
-    targetVy: Float32Array,
-    x: number,
-    y: number,
-    dx: number,
-    dy: number
-  ): void {
-    const baseVx = dx * this.settings.mouseStrength * 60;
-    const baseVy = dy * this.settings.mouseStrength * 60;
-    const radiusPx = this.settings.mouseRadius;
-    const cellW = this.width / OVERLAY_GRID_WIDTH;
-    const cellH = this.height / OVERLAY_GRID_HEIGHT;
-
-    const centerX = Math.min(OVERLAY_GRID_WIDTH - 1, Math.max(0, Math.floor((x / this.width) * OVERLAY_GRID_WIDTH)));
-    const centerY = Math.min(OVERLAY_GRID_HEIGHT - 1, Math.max(0, Math.floor((y / this.height) * OVERLAY_GRID_HEIGHT)));
-
-    const radiusCellsX = Math.max(1, Math.ceil(radiusPx / cellW));
-    const radiusCellsY = Math.max(1, Math.ceil(radiusPx / cellH));
-    const minX = Math.max(0, centerX - radiusCellsX);
-    const maxX = Math.min(OVERLAY_GRID_WIDTH - 1, centerX + radiusCellsX);
-    const minY = Math.max(0, centerY - radiusCellsY);
-    const maxY = Math.min(OVERLAY_GRID_HEIGHT - 1, centerY + radiusCellsY);
-
-    for (let cy = minY; cy <= maxY; cy += 1) {
-      const py = (cy + 0.5) * cellH;
-      for (let cx = minX; cx <= maxX; cx += 1) {
-        const px = (cx + 0.5) * cellW;
-        const dist = Math.hypot(px - x, py - y);
-        if (dist > radiusPx) continue;
-
-        const influence = 1 - dist / radiusPx;
-        const idx = cy * OVERLAY_GRID_WIDTH + cx;
-        targetVx[idx] = this.clampOverlayComponent(targetVx[idx] + baseVx * influence);
-        targetVy[idx] = this.clampOverlayComponent(targetVy[idx] + baseVy * influence);
-      }
-    }
-  }
-
-  private sampleOverlay(x: number, y: number): { vx: number; vy: number } {
-    const cx = Math.min(OVERLAY_GRID_WIDTH - 1, Math.max(0, Math.floor((x / this.width) * OVERLAY_GRID_WIDTH)));
-    const cy = Math.min(OVERLAY_GRID_HEIGHT - 1, Math.max(0, Math.floor((y / this.height) * OVERLAY_GRID_HEIGHT)));
-    const idx = cy * OVERLAY_GRID_WIDTH + cx;
-    return { vx: this.overlayVx[idx] + this.hoverVx[idx], vy: this.overlayVy[idx] + this.hoverVy[idx] };
   }
 
   private resizeFlockGrid(): void {
@@ -358,7 +437,7 @@ export class ParticleSystem {
 
   private rebuildFlockIndex(): void {
     this.flockHead.fill(-1);
-    const count = this.settings.particleCount;
+    const count = Math.min(this.runtime.activeParticles, this.poolSize);
     for (let i = 0; i < count; i += 1) {
       const x = this.readPositionsX[i];
       const y = this.readPositionsY[i];
@@ -370,7 +449,7 @@ export class ParticleSystem {
     }
   }
 
-  private computeSeparationForce(index: number, x: number, y: number): void {
+  private computeSeparationForce(index: number, x: number, y: number, count: number): void {
     const cellX = Math.min(this.flockCols - 1, Math.max(0, Math.floor((x / this.width) * this.flockCols)));
     const cellY = Math.min(this.flockRows - 1, Math.max(0, Math.floor((y / this.height) * this.flockRows)));
     const radiusSq = FLOCK_SEPARATION_RADIUS * FLOCK_SEPARATION_RADIUS;
@@ -389,7 +468,7 @@ export class ParticleSystem {
       for (let cx = minX; cx <= maxX; cx += 1) {
         let node = this.flockHead[cy * this.flockCols + cx];
         while (node !== -1) {
-          if (node !== index) {
+          if (node < count && node !== index) {
             let dx = x - this.readPositionsX[node];
             let dy = y - this.readPositionsY[node];
 
@@ -427,17 +506,5 @@ export class ParticleSystem {
     const scale = FLOCK_SEPARATION_STRENGTH / neighbors;
     this.separationVx = forceX * scale;
     this.separationVy = forceY * scale;
-  }
-
-  private decayHoverOverlay(): void {
-    const decay = Math.min(HOVER_DECAY_MAX, this.settings.overlayDecay);
-    for (let i = 0; i < this.hoverVx.length; i += 1) {
-      this.hoverVx[i] *= decay;
-      this.hoverVy[i] *= decay;
-    }
-  }
-
-  private clampOverlayComponent(value: number): number {
-    return Math.min(OVERLAY_MAX_COMPONENT, Math.max(-OVERLAY_MAX_COMPONENT, value));
   }
 }
