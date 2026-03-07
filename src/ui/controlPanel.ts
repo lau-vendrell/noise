@@ -86,23 +86,26 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
   let open = true;
   let visible = true;
 
-  const panelToggle = document.createElement('button');
-  panelToggle.type = 'button';
-  panelToggle.className = 'panel-toggle-pill glass-panel';
-
-  const panelToggleLabel = document.createElement('span');
-  panelToggleLabel.textContent = 'Noise control';
-  panelToggleLabel.className = 'panel-toggle-label';
-
-  const panelToggleChevron = document.createElement('span');
-  panelToggleChevron.className = 'panel-toggle-chevron';
-  panelToggleChevron.innerHTML = CHEVRON_ICON;
-
-  panelToggle.appendChild(panelToggleLabel);
-  panelToggle.appendChild(panelToggleChevron);
-
-  const panel = document.createElement('div');
+  const panel = document.createElement('section');
   panel.className = 'control-panel glass-panel';
+
+  const headerBtn = document.createElement('button');
+  headerBtn.type = 'button';
+  headerBtn.className = 'panel-header';
+
+  const title = document.createElement('span');
+  title.className = 'panel-title';
+  title.textContent = 'Noise control';
+
+  const chevron = document.createElement('span');
+  chevron.className = 'panel-chevron';
+  chevron.innerHTML = CHEVRON_ICON;
+
+  headerBtn.appendChild(title);
+  headerBtn.appendChild(chevron);
+
+  const content = document.createElement('div');
+  content.className = 'panel-content';
 
   const modeRow = document.createElement('div');
   modeRow.className = 'mode-row';
@@ -121,11 +124,10 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
 
   modeRow.appendChild(manualModeBtn);
   modeRow.appendChild(voiceModeBtn);
-  panel.appendChild(modeRow);
+  content.appendChild(modeRow);
 
   const manualSection = document.createElement('section');
   manualSection.className = 'mode-section';
-
   const voiceSection = document.createElement('section');
   voiceSection.className = 'mode-section';
 
@@ -206,13 +208,11 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
 
   const micIcon = document.createElement('span');
   micIcon.className = 'mic-icon';
-
   const micText = document.createElement('span');
   micText.className = 'mic-text';
 
   micButton.appendChild(micIcon);
   micButton.appendChild(micText);
-
   voiceStatusRow.appendChild(micButton);
   voiceSection.appendChild(voiceStatusRow);
 
@@ -268,10 +268,11 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
 
   voiceSection.appendChild(createActionButtons());
 
-  panel.appendChild(manualSection);
-  panel.appendChild(voiceSection);
+  content.appendChild(manualSection);
+  content.appendChild(voiceSection);
 
-  root.appendChild(panelToggle);
+  panel.appendChild(headerBtn);
+  panel.appendChild(content);
   root.appendChild(panel);
 
   const syncSliders = <T extends string>(refs: Map<T, SliderRefs>, source: Record<string, number>) => {
@@ -284,11 +285,14 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
   };
 
   const syncOpenState = () => {
-    panel.classList.toggle('is-hidden', !open || !visible);
-    panelToggle.classList.toggle('is-open', open && visible);
+    const collapsed = !open || !visible;
+    panel.classList.toggle('is-collapsed', collapsed);
+    panel.classList.toggle('is-hidden', !visible);
+    headerBtn.setAttribute('aria-expanded', String(!collapsed));
+    content.hidden = collapsed;
   };
 
-  panelToggle.addEventListener('click', () => {
+  headerBtn.addEventListener('click', () => {
     open = !open;
     syncOpenState();
   });
@@ -298,7 +302,6 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
       const manualActive = settings.activeMode === 'manual';
       manualModeBtn.classList.toggle('active', manualActive);
       voiceModeBtn.classList.toggle('active', !manualActive);
-
       manualSection.classList.toggle('is-active', manualActive);
       voiceSection.classList.toggle('is-active', !manualActive);
 
@@ -317,13 +320,11 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
       micText.textContent = getMicButtonLabel(status);
       micButton.classList.toggle('listening', isMicOn(status));
       micButton.setAttribute('aria-pressed', String(isMicOn(status)));
-
       meterFill.style.transform = `scaleX(${Math.min(1, Math.max(0, level))})`;
     },
 
     setVisible(nextVisible: boolean) {
       visible = nextVisible;
-      root.style.display = nextVisible ? '' : 'none';
       syncOpenState();
     }
   };
