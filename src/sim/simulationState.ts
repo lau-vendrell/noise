@@ -42,7 +42,7 @@ export interface RuntimeSimulationControls {
 }
 
 export const PARTICLE_LIMITS = {
-  min: 2000,
+  min: 5000,
   max: 12000
 } as const;
 
@@ -88,7 +88,7 @@ export function clampManualSettings(settings: SimulationSettings): SimulationSet
   return {
     ...settings,
     particleCount: Math.min(PARTICLE_LIMITS.max, Math.max(PARTICLE_LIMITS.min, Math.round(settings.particleCount))),
-    speed: Math.min(220, Math.max(5, settings.speed)),
+    speed: Math.min(100, Math.max(5, settings.speed)),
     noiseScale: Math.min(0.008, Math.max(0.0005, settings.noiseScale)),
     noiseStrength: Math.min(4, Math.max(0.2, settings.noiseStrength)),
     turbulence: Math.min(6, Math.max(1, Math.round(settings.turbulence))),

@@ -38,7 +38,7 @@ const CHEVRON_ICON =
 
 const manualSliders: SliderConfig<keyof Pick<SimulationSettings, 'particleCount' | 'speed' | 'noiseScale' | 'noiseStrength' | 'turbulence' | 'trail'>>[] = [
   { id: 'particleCount', label: 'Particle count', min: PARTICLE_LIMITS.min, max: PARTICLE_LIMITS.max, step: 100 },
-  { id: 'speed', label: 'Speed', min: 5, max: 220, step: 1 },
+  { id: 'speed', label: 'Speed', min: 5, max: 100, step: 1 },
   { id: 'noiseScale', label: 'Noise scale', min: 0.0005, max: 0.008, step: 0.0001, format: (value) => value.toFixed(4) },
   { id: 'noiseStrength', label: 'Noise strength', min: 0.2, max: 4, step: 0.05, format: (value) => value.toFixed(2) },
   { id: 'turbulence', label: 'Turbulence / Octaves', min: 1, max: 6, step: 1 },
@@ -134,6 +134,8 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
   const manualRefs = new Map<keyof SimulationSettings, SliderRefs>();
   const voiceRefs = new Map<keyof VoiceControlSettings, SliderRefs>();
   const pauseButtons: HTMLButtonElement[] = [];
+  const resetButtons: HTMLButtonElement[] = [];
+  const seedButtons: HTMLButtonElement[] = [];
 
   const createActionButtons = () => {
     const row = document.createElement('div');
@@ -150,12 +152,14 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
     resetBtn.className = 'secondary-btn';
     resetBtn.textContent = 'Reset (R)';
     resetBtn.addEventListener('click', actions.onReset);
+    resetButtons.push(resetBtn);
 
     const seedBtn = document.createElement('button');
     seedBtn.type = 'button';
     seedBtn.className = 'secondary-btn';
     seedBtn.textContent = 'Seed (S)';
     seedBtn.addEventListener('click', actions.onSeed);
+    seedButtons.push(seedBtn);
 
     row.appendChild(pauseBtn);
     row.appendChild(resetBtn);
@@ -299,6 +303,7 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
 
   return {
     sync(settings: AppSettings) {
+      const mobile = window.matchMedia('(max-width: 720px)').matches;
       const manualActive = settings.activeMode === 'manual';
       manualModeBtn.classList.toggle('active', manualActive);
       voiceModeBtn.classList.toggle('active', !manualActive);
@@ -306,7 +311,13 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
       voiceSection.classList.toggle('is-active', !manualActive);
 
       pauseButtons.forEach((btn) => {
-        btn.textContent = settings.manual.paused ? 'Play (P)' : 'Pause (P)';
+        btn.textContent = settings.manual.paused ? (mobile ? 'Play' : 'Play (P)') : (mobile ? 'Pause' : 'Pause (P)');
+      });
+      resetButtons.forEach((btn) => {
+        btn.textContent = mobile ? 'Reset' : 'Reset (R)';
+      });
+      seedButtons.forEach((btn) => {
+        btn.textContent = mobile ? 'Seed' : 'Seed (S)';
       });
 
       syncSliders(manualRefs as Map<string, SliderRefs>, settings.manual as unknown as Record<string, number>);

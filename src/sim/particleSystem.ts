@@ -7,10 +7,10 @@ const FLOCK_SEPARATION_STRENGTH = 44;
 const FLOCK_MAX_NEIGHBORS = 20;
 const MAX_PARTICLE_POOL = 15000;
 const MIN_ACTIVE_PARTICLES = 300;
-const HOVER_RADIUS_FACTOR = 5.2;
+const HOVER_RADIUS_FACTOR = 3.1;
 const PRESS_RADIUS_FACTOR = 3.4;
-const HOVER_DECAY = 1.2;
-const HOVER_MIN_SPEED = 0.8;
+const HOVER_DECAY = 0.962;
+const HOVER_MIN_SPEED = 0.03;
 
 const THEME_PALETTE: Record<ThemeMode, { background: string; stroke: string }> = {
   dark: {
@@ -174,7 +174,7 @@ export class ParticleSystem {
     this.settings = { ...this.settings, ...next };
 
     this.settings.particleCount = Math.min(MAX_PARTICLE_POOL, Math.max(300, Math.round(this.settings.particleCount)));
-    this.settings.speed = Math.min(220, Math.max(5, this.settings.speed));
+    this.settings.speed = Math.min(100, Math.max(5, this.settings.speed));
     this.settings.noiseScale = Math.min(0.008, Math.max(0.0005, this.settings.noiseScale));
     this.settings.noiseStrength = Math.min(4, Math.max(0.2, this.settings.noiseStrength));
     this.settings.turbulence = Math.min(6, Math.max(1, Math.round(this.settings.turbulence)));
@@ -331,8 +331,8 @@ export class ParticleSystem {
     const radialX = dx * invDist;
     const radialY = dy * invDist;
 
-    const alignGain = this.settings.mouseStrength * 82 * this.hoverEnergy * falloff;
-    const radialGain = this.settings.mouseStrength * 18 * this.hoverEnergy * falloff;
+    const alignGain = this.settings.mouseStrength * 110 * this.hoverEnergy * falloff;
+    const radialGain = this.settings.mouseStrength * 200 * this.hoverEnergy * falloff;
     this.interactionVx = this.pointerDirX * alignGain + radialX * radialGain;
     this.interactionVy = this.pointerDirY * alignGain + radialY * radialGain;
   }
@@ -395,9 +395,9 @@ export class ParticleSystem {
         const invSpeed = 1 / speed;
         const dirX = dx * invSpeed;
         const dirY = dy * invSpeed;
-        this.pointerDirX = this.pointerDirX * 0.72 + dirX * 0.28;
-        this.pointerDirY = this.pointerDirY * 0.72 + dirY * 0.28;
-        this.hoverEnergy = Math.min(1, this.hoverEnergy * 0.35 + Math.min(1, speed / 28) * 0.65);
+        this.pointerDirX = this.pointerDirX * 0.48 + dirX * 0.52;
+        this.pointerDirY = this.pointerDirY * 0.48 + dirY * 0.52;
+        this.hoverEnergy = Math.min(1, this.hoverEnergy * 0.18 + Math.min(1, speed / 18) * 0.82);
       }
     });
 
