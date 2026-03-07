@@ -380,10 +380,20 @@ body[data-theme='sand'] .mic-btn.listening .mic-icon {
 .mode-btn:hover,
 .secondary-btn:hover,
 .mic-btn:hover,
-.panel-header:hover,
 .theme-toggle-fab:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--surface-line) 65%, white);
+}
+
+.mode-btn:active,
+.secondary-btn:active,
+.mic-btn:active,
+.theme-toggle-fab:active {
+  transform: translateY(0);
+}
+
+.panel-header:active {
+  color: var(--surface-muted);
 }
 
 .mode-btn:focus-visible,
@@ -393,6 +403,38 @@ body[data-theme='sand'] .mic-btn.listening .mic-icon {
 .theme-toggle-fab:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--surface-text) 40%, transparent);
   outline-offset: 2px;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body[data-theme='sand'] .mode-btn:hover,
+body[data-theme='sand'] .secondary-btn:hover,
+body[data-theme='sand'] .mic-btn:hover,
+body[data-theme='sand'] .theme-toggle-fab:hover {
+  border-color: rgba(68, 68, 68, 0.45);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+body[data-theme='sand'] .mode-btn:active,
+body[data-theme='sand'] .secondary-btn:active,
+body[data-theme='sand'] .mic-btn:active,
+body[data-theme='sand'] .theme-toggle-fab:active {
+  border-color: rgba(68, 68, 68, 0.5);
+  background: rgba(68, 68, 68, 0.16);
+}
+
+body[data-theme='sand'] .panel-header:active {
+  color: rgba(68, 68, 68, 0.72);
+}
+
+body[data-theme='sand'] .mode-btn:focus-visible,
+body[data-theme='sand'] .secondary-btn:focus-visible,
+body[data-theme='sand'] .mic-btn:focus-visible,
+body[data-theme='sand'] .panel-header:focus-visible,
+body[data-theme='sand'] .theme-toggle-fab:focus-visible {
+  outline-color: rgba(68, 68, 68, 0.42);
 }
 
 .theme-toggle-fab {
