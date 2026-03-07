@@ -20,7 +20,7 @@ export class VoiceMapper {
   private speed = 2;
   private noiseStrength = 0.2;
   private turbulence = 1;
-  private activeParticles = 400;
+  private activeParticles = 25000;
 
   enterCalm(manual: SimulationSettings): void {
     this.level = 0;
@@ -28,7 +28,7 @@ export class VoiceMapper {
     this.speed = Math.max(1, manual.speed * 0.08);
     this.noiseStrength = Math.max(0.2, manual.noiseStrength * 0.2);
     this.turbulence = 1;
-    this.activeParticles = Math.max(350, Math.round(manual.particleCount * 0.18));
+    this.activeParticles = 25000;
   }
 
   map(features: AudioFeatures, voice: VoiceControlSettings, manual: SimulationSettings): VoiceMappingResult {
@@ -44,7 +44,7 @@ export class VoiceMapper {
     const activityTarget = clamp(this.level * 0.9 + fluxBoost * 0.25, 0, 1);
     this.activity = ease(this.activity, activityTarget, attack * 0.8, release * 1.2);
 
-    const minParticles = 350;
+    const minParticles = 25000;
     const targetParticles = minParticles + this.level * (voice.maxParticlesFromVoice - minParticles);
     this.activeParticles = ease(this.activeParticles, targetParticles, attack * 0.55, release);
 

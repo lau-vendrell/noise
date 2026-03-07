@@ -47,8 +47,8 @@ export const PARTICLE_LIMITS = {
 } as const;
 
 export const VOICE_PARTICLE_LIMITS = {
-  min: 2500,
-  max: 14000
+  min: 5000,
+  max: 12000
 } as const;
 
 export const STORAGE_KEY = 'noise-field-settings-v2';
@@ -70,7 +70,7 @@ export const DEFAULT_SETTINGS: SimulationSettings = {
 
 export const DEFAULT_VOICE_SETTINGS: VoiceControlSettings = {
   sensitivity: 1.6,
-  maxParticlesFromVoice: 9000,
+  maxParticlesFromVoice: 12000,
   voiceToSpeed: 90,
   voiceToNoise: 2.2,
   threshold: 0.03,

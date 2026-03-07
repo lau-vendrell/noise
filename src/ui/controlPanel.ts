@@ -275,6 +275,12 @@ export function createControlPanel(root: HTMLElement, initial: AppSettings, acti
   content.appendChild(manualSection);
   content.appendChild(voiceSection);
 
+  const researchNote = document.createElement('span');
+  researchNote.className = 'research-note';
+  researchNote.innerHTML =
+    'A creative experiment by Laura Vendrell<span class="sparkles" aria-hidden="true"><svg class="sparkle sparkle-main" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"></path></svg><svg class="sparkle sparkle-small" viewBox="0 0 24 24"><path d="M12 4.5l1.2 3.3 3.3 1.2-3.3 1.2L12 13.5l-1.2-3.3L7.5 9l3.3-1.2L12 4.5z"></path></svg></span>';
+  content.appendChild(researchNote);
+
   panel.appendChild(headerBtn);
   panel.appendChild(content);
   root.appendChild(panel);

@@ -5,8 +5,13 @@ const FLOCK_CELL_SIZE = 36;
 const FLOCK_SEPARATION_RADIUS = 26;
 const FLOCK_SEPARATION_STRENGTH = 44;
 const FLOCK_MAX_NEIGHBORS = 20;
-const MAX_PARTICLE_POOL = 15000;
+const MAX_PARTICLE_POOL = 60000;
 const MIN_ACTIVE_PARTICLES = 300;
+const MAX_SEPARATION_PARTICLES = 14000;
+const HIGH_DENSITY_THRESHOLD = 26000;
+const CORNER_PUSH_RADIUS = 92;
+const CORNER_PUSH_STRENGTH = 12;
+const WRAP_RESPAWN_CHANCE = 0.018;
 const HOVER_RADIUS_FACTOR = 3.1;
 const PRESS_RADIUS_FACTOR = 3.4;
 const HOVER_DECAY = 0.962;
@@ -70,6 +75,8 @@ export class ParticleSystem {
   private hoverEnergy = 0;
   private interactionVx = 0;
   private interactionVy = 0;
+  private cornerVx = 0;
+  private cornerVy = 0;
   private separationVx = 0;
   private separationVy = 0;
 
@@ -223,6 +230,8 @@ export class ParticleSystem {
     this.ctx.beginPath();
 
     const count = Math.min(this.runtime.activeParticles, this.poolSize);
+    const highDensity = count >= HIGH_DENSITY_THRESHOLD;
+    const useSeparation = count <= MAX_SEPARATION_PARTICLES;
     const speed = this.runtime.speed;
     const scale = this.runtime.noiseScale;
     const strength = this.runtime.noiseStrength;
@@ -240,9 +249,18 @@ export class ParticleSystem {
       vx += this.interactionVx;
       vy += this.interactionVy;
 
-      this.computeSeparationForce(i, x, y, count);
-      vx += this.separationVx;
-      vy += this.separationVy;
+      if (useSeparation) {
+        this.computeSeparationForce(i, x, y, count);
+        vx += this.separationVx;
+        vy += this.separationVy;
+      }
+
+      if (highDensity) {
+        this.computeCornerPushForce(x, y);
+        vx += this.cornerVx;
+        vy += this.cornerVy;
+      }
+
       const nx = x + vx * dt;
       const ny = y + vy * dt;
 
@@ -269,6 +287,11 @@ export class ParticleSystem {
       if (!wrapped) {
         this.ctx.moveTo(x, y);
         this.ctx.lineTo(wrappedX, wrappedY);
+      }
+
+      if (wrapped && highDensity && Math.random() < WRAP_RESPAWN_CHANCE) {
+        wrappedX = Math.random() * this.width;
+        wrappedY = Math.random() * this.height;
       }
 
       this.positionsX[i] = wrappedX;
@@ -335,6 +358,56 @@ export class ParticleSystem {
     const radialGain = this.settings.mouseStrength * 200 * this.hoverEnergy * falloff;
     this.interactionVx = this.pointerDirX * alignGain + radialX * radialGain;
     this.interactionVy = this.pointerDirY * alignGain + radialY * radialGain;
+  }
+
+  private computeCornerPushForce(x: number, y: number): void {
+    const radius = CORNER_PUSH_RADIUS;
+    const radiusSq = radius * radius;
+    let forceX = 0;
+    let forceY = 0;
+
+    const corner00X = x;
+    const corner00Y = y;
+    const dist00Sq = corner00X * corner00X + corner00Y * corner00Y;
+    if (dist00Sq < radiusSq && dist00Sq > 0.0001) {
+      const dist = Math.sqrt(dist00Sq);
+      const influence = (1 - dist / radius) ** 2;
+      forceX += (corner00X / dist) * influence;
+      forceY += (corner00Y / dist) * influence;
+    }
+
+    const corner10X = x - this.width;
+    const corner10Y = y;
+    const dist10Sq = corner10X * corner10X + corner10Y * corner10Y;
+    if (dist10Sq < radiusSq && dist10Sq > 0.0001) {
+      const dist = Math.sqrt(dist10Sq);
+      const influence = (1 - dist / radius) ** 2;
+      forceX += (corner10X / dist) * influence;
+      forceY += (corner10Y / dist) * influence;
+    }
+
+    const corner01X = x;
+    const corner01Y = y - this.height;
+    const dist01Sq = corner01X * corner01X + corner01Y * corner01Y;
+    if (dist01Sq < radiusSq && dist01Sq > 0.0001) {
+      const dist = Math.sqrt(dist01Sq);
+      const influence = (1 - dist / radius) ** 2;
+      forceX += (corner01X / dist) * influence;
+      forceY += (corner01Y / dist) * influence;
+    }
+
+    const corner11X = x - this.width;
+    const corner11Y = y - this.height;
+    const dist11Sq = corner11X * corner11X + corner11Y * corner11Y;
+    if (dist11Sq < radiusSq && dist11Sq > 0.0001) {
+      const dist = Math.sqrt(dist11Sq);
+      const influence = (1 - dist / radius) ** 2;
+      forceX += (corner11X / dist) * influence;
+      forceY += (corner11Y / dist) * influence;
+    }
+
+    this.cornerVx = forceX * CORNER_PUSH_STRENGTH;
+    this.cornerVy = forceY * CORNER_PUSH_STRENGTH;
   }
 
   private ensurePoolSize(required: number): void {
