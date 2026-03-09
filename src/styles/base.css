@@ -2,6 +2,11 @@
   box-sizing: border-box;
 }
 
+:root {
+  --viewport-width: 100vw;
+  --viewport-height: 100vh;
+}
+
 html,
 body {
   margin: 0;
@@ -24,7 +29,8 @@ body {
 
 canvas {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
   display: block;
   width: 100vw;
   height: 100vh;

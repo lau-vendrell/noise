@@ -1,18 +1,23 @@
 @media (max-width: 720px) {
   html,
   body {
+    width: var(--viewport-width, 100vw);
     height: 100vh;
     min-height: 100vh;
     height: 100svh;
     min-height: 100svh;
     height: 100dvh;
     min-height: 100dvh;
+    height: var(--viewport-height, 100dvh);
+    min-height: var(--viewport-height, 100dvh);
   }
 
   canvas {
+    width: var(--viewport-width, 100vw);
     height: 100vh;
     height: 100svh;
     height: 100dvh;
+    height: var(--viewport-height, 100dvh);
   }
 
   #ui-root {

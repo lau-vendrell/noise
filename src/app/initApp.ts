@@ -135,24 +135,35 @@ export function initApp(): void {
     if (viewport) {
       return {
         width: Math.round(viewport.width),
-        height: Math.round(viewport.height)
+        height: Math.round(viewport.height),
+        offsetTop: Math.round(viewport.offsetTop),
+        offsetLeft: Math.round(viewport.offsetLeft)
       };
     }
 
     return {
       width: window.innerWidth,
-      height: window.innerHeight
+      height: window.innerHeight,
+      offsetTop: 0,
+      offsetLeft: 0
     };
   };
 
   const syncViewport = () => {
-    const { width, height } = getViewportSize();
+    const { width, height, offsetTop, offsetLeft } = getViewportSize();
+    document.documentElement.style.setProperty('--viewport-width', `${width}px`);
+    document.documentElement.style.setProperty('--viewport-height', `${height}px`);
+    canvas.style.left = `${offsetLeft}px`;
+    canvas.style.top = `${offsetTop}px`;
     sim.resize(width, height);
   };
 
   syncViewport();
+  requestAnimationFrame(syncViewport);
+  setTimeout(syncViewport, 180);
   window.addEventListener('resize', syncViewport);
   window.addEventListener('orientationchange', syncViewport);
+  window.addEventListener('pageshow', syncViewport);
   window.visualViewport?.addEventListener('resize', syncViewport);
   window.visualViewport?.addEventListener('scroll', syncViewport);
 
