@@ -6,7 +6,7 @@
 }
 
 .glass-panel {
-  background: linear-gradient(90deg, var(--surface-panel), rgba(255, 255, 255, 0.08));
+  background: linear-gradient(90deg, var(--surface-panel), rgba(255, 255, 255, 0.01));
   border: 1px solid var(--surface-panel-border);
   -webkit-backdrop-filter: blur(22px) saturate(135%);
   backdrop-filter: blur(22px) saturate(135%);
