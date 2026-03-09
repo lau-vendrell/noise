@@ -1,3 +1,5 @@
+import { clamp01 } from '../utils/math';
+
 export interface AudioFeatures {
   rms: number;
   energy: number;
@@ -11,10 +13,6 @@ const EMPTY_FEATURES: AudioFeatures = {
   flux: 0,
   centroid: 0
 };
-
-function clamp01(value: number): number {
-  return Math.min(1, Math.max(0, value));
-}
 
 export class AudioFeatureExtractor {
   private timeData: Uint8Array<ArrayBuffer> = new Uint8Array(0);

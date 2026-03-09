@@ -1,0 +1,258 @@
+.mode-btn,
+.secondary-btn,
+.mic-btn {
+  border: 1px solid var(--surface-line);
+  background: var(--surface-tab);
+  color: var(--surface-text);
+  height: 40px;
+  border-radius: 12px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.mode-btn.active {
+  background: var(--surface-tab-active-bg);
+  color: var(--surface-tab-active-text);
+  border-color: transparent;
+}
+
+.control-row {
+  display: grid;
+  grid-template-columns: minmax(128px, 1fr) minmax(0, 1.35fr) 76px;
+  column-gap: 0;
+  align-items: center;
+  min-width: 0;
+}
+
+.control-rows {
+  display: grid;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.control-label,
+.control-value,
+.meter-label {
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.control-label,
+.meter-label {
+  color: var(--surface-muted);
+}
+
+.control-value {
+  color: var(--surface-text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  justify-self: end;
+  width: 100%;
+  overflow: hidden;
+}
+
+input[type='range'] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 14px;
+  background: transparent;
+  margin: 0;
+  min-width: 0;
+}
+
+input[type='range']::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--surface-track);
+  border-radius: 999px;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--surface-thumb) 80%, transparent);
+  background: var(--surface-thumb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--surface-thumb) 18%, transparent);
+}
+
+input[type='range']::-moz-range-track {
+  height: 2px;
+  background: var(--surface-track);
+  border-radius: 999px;
+  border: 0;
+}
+
+input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--surface-thumb) 80%, transparent);
+  background: var(--surface-thumb);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--surface-thumb) 18%, transparent);
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.secondary-btn {
+  min-width: 0;
+  width: 100%;
+  white-space: nowrap;
+  background: transparent;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 10px;
+}
+
+.voice-row {
+  display: flex;
+  align-items: center;
+}
+
+.voice-status {
+  display: grid;
+  gap: 12px;
+}
+
+.mic-btn {
+  width: 100%;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.mic-btn .mic-icon {
+  display: inline-flex;
+  color: var(--surface-soft);
+}
+
+.mic-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.mic-btn.listening {
+  background: color-mix(in srgb, #7de0af 24%, var(--surface-tab));
+  border-color: color-mix(in srgb, #7de0af 46%, transparent);
+}
+
+.mic-btn.listening .mic-icon {
+  color: #77e0ac;
+}
+
+body[data-theme='sand'] .mic-btn.listening {
+  background: rgba(70, 158, 108, 0.22);
+  border-color: rgba(54, 120, 84, 0.56);
+  color: #2f6f4e;
+}
+
+body[data-theme='sand'] .mic-btn.listening .mic-icon {
+  color: #2f6f4e;
+}
+
+.meter-row {
+  display: grid;
+  gap: 10px;
+}
+
+.meter {
+  height: 9px;
+  border-radius: 999px;
+  border: 1px solid var(--surface-line);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface-tab) 80%, transparent);
+}
+
+.meter-fill {
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, #8dc9ff, #95ecbf 60%, #f2dea4 100%);
+  transition: transform 80ms linear;
+}
+
+.mode-btn:hover,
+.secondary-btn:hover,
+.mic-btn:hover,
+.theme-toggle-fab:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--surface-line) 65%, white);
+}
+
+.mode-btn:active,
+.secondary-btn:active,
+.mic-btn:active,
+.theme-toggle-fab:active {
+  transform: translateY(0);
+}
+
+.panel-header:active {
+  color: var(--surface-muted);
+}
+
+.mode-btn:focus-visible,
+.secondary-btn:focus-visible,
+.mic-btn:focus-visible,
+.panel-header:focus-visible,
+.theme-toggle-fab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--surface-text) 40%, transparent);
+  outline-offset: 2px;
+}
+
+body[data-theme='sand'] .mode-btn:hover,
+body[data-theme='sand'] .secondary-btn:hover,
+body[data-theme='sand'] .mic-btn:hover,
+body[data-theme='sand'] .theme-toggle-fab:hover {
+  border-color: rgba(68, 68, 68, 0.34);
+  background: rgba(255, 255, 255, 0.46);
+  color: rgba(68, 68, 68, 0.92);
+}
+
+body[data-theme='sand'] .mode-btn:hover {
+  color: rgba(47, 47, 47, 0.96);
+}
+
+body[data-theme='sand'] .mode-btn.active:hover {
+  background: #3f3f3f;
+  border-color: #3f3f3f;
+  color: rgba(245, 240, 233, 0.98);
+}
+
+body[data-theme='sand'] .mode-btn:active,
+body[data-theme='sand'] .secondary-btn:active,
+body[data-theme='sand'] .mic-btn:active,
+body[data-theme='sand'] .theme-toggle-fab:active {
+  border-color: rgba(68, 68, 68, 0.5);
+  background: rgba(68, 68, 68, 0.16);
+}
+
+body[data-theme='sand'] .panel-header:active {
+  color: rgba(68, 68, 68, 0.72);
+}
+
+body[data-theme='sand'] .mode-btn:focus-visible,
+body[data-theme='sand'] .secondary-btn:focus-visible,
+body[data-theme='sand'] .mic-btn:focus-visible,
+body[data-theme='sand'] .panel-header:focus-visible,
+body[data-theme='sand'] .theme-toggle-fab:focus-visible {
+  outline-color: rgba(68, 68, 68, 0.42);
+}

@@ -1,0 +1,55 @@
+#ui-root {
+  position: fixed;
+  left: 18px;
+  top: 18px;
+  z-index: 10;
+}
+
+.glass-panel {
+  background: linear-gradient(90deg, var(--surface-panel), rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--surface-panel-border);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+  backdrop-filter: blur(22px) saturate(135%);
+  box-shadow: var(--ui-shadow);
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass-panel {
+    background: rgba(30, 30, 34, 0.68);
+  }
+
+  body[data-theme='sand'] .glass-panel {
+    background: rgba(243, 235, 223, 0.3);
+  }
+}
+
+.theme-toggle-fab {
+  position: fixed;
+  right: 18px;
+  top: 18px;
+  z-index: 20;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid var(--surface-panel-border);
+  background: var(--surface-panel);
+  color: var(--surface-text);
+  font-size: 18px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: var(--ui-shadow);
+}
+
+.theme-toggle-fab svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

@@ -1,0 +1,130 @@
+.control-panel {
+  width: min(387px, calc((100vw - 36px) * 0.9));
+  border-radius: 16px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.control-panel.is-hidden {
+  display: none;
+}
+
+.control-panel.is-collapsed {
+  width: auto;
+  min-width: 0;
+  padding: 0;
+  position: fixed;
+  left: 18px;
+  top: 18px;
+  left: auto;
+  margin: 0;
+  border-radius: 999px;
+  z-index: 30;
+}
+
+.panel-header {
+  width: 100%;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--surface-text);
+  padding: 0 12px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.control-panel.is-collapsed .panel-header {
+  border-radius: 999px;
+  padding: 0 14px;
+  gap: 10px;
+}
+
+.panel-title {
+  white-space: nowrap;
+  font-size: 16px;
+}
+
+.panel-chevron {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 160ms ease;
+}
+
+.control-panel:not(.is-collapsed) .panel-chevron {
+  transform: rotate(180deg);
+}
+
+.panel-chevron svg {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.panel-content {
+  padding: 12px;
+}
+
+.mode-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.mode-section {
+  display: none;
+  gap: 16px;
+  min-width: 0;
+}
+
+.mode-section.is-active {
+  display: grid;
+}
+
+.research-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  opacity: 0.75;
+  padding-top: 16px;
+}
+
+.sparkles {
+  position: relative;
+  width: 21px;
+  height: 16px;
+  display: inline-block;
+}
+
+.sparkle {
+  position: absolute;
+  color: currentColor;
+  fill: currentColor;
+  opacity: 0.8;
+}
+
+.sparkle-main {
+  width: 16px;
+  height: 16px;
+  left: 0;
+  top: 0;
+}
+
+.sparkle-small {
+  width: 13px;
+  height: 13px;
+  left: 10px;
+  top: -4px;
+}

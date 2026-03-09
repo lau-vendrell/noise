@@ -1,0 +1,71 @@
+@media (max-width: 720px) {
+  html,
+  body {
+    height: 100vh;
+    min-height: 100vh;
+    height: 100svh;
+    min-height: 100svh;
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  canvas {
+    height: 100vh;
+    height: 100svh;
+    height: 100dvh;
+  }
+
+  #ui-root {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    z-index: 15;
+    pointer-events: none;
+  }
+
+  .control-panel {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: calc((100vw - 20px) * 0.9);
+    padding: 10px;
+    border-radius: 18px 18px 0 0;
+    max-height: 78dvh;
+    overflow: auto;
+    pointer-events: auto;
+  }
+
+  .control-panel.is-collapsed {
+    left: 50%;
+    right: auto;
+    top: auto;
+    bottom: 12px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    width: auto;
+  }
+
+  .panel-content {
+    padding: 10px;
+  }
+
+  .mode-row {
+    margin-bottom: 20px;
+  }
+
+  .control-row {
+    grid-template-columns: minmax(106px, 1fr) minmax(0, 1.35fr) 68px;
+    column-gap: 0;
+  }
+
+  .secondary-btn {
+    font-size: 12px;
+  }
+
+  .theme-toggle-fab {
+    right: 10px;
+    top: 10px;
+  }
+}

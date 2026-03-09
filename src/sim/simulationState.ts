@@ -1,3 +1,6 @@
+import { clamp } from '../utils/math';
+import { readJson, writeJson } from '../utils/storage';
+
 export type ControlMode = 'manual' | 'voice';
 export type ThemeMode = 'dark' | 'sand';
 
@@ -87,15 +90,15 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 export function clampManualSettings(settings: SimulationSettings): SimulationSettings {
   return {
     ...settings,
-    particleCount: Math.min(PARTICLE_LIMITS.max, Math.max(PARTICLE_LIMITS.min, Math.round(settings.particleCount))),
-    speed: Math.min(100, Math.max(5, settings.speed)),
-    noiseScale: Math.min(0.008, Math.max(0.0005, settings.noiseScale)),
-    noiseStrength: Math.min(4, Math.max(0.2, settings.noiseStrength)),
-    turbulence: Math.min(6, Math.max(1, Math.round(settings.turbulence))),
-    trail: Math.min(1, Math.max(0, settings.trail)),
-    mouseStrength: Math.min(8, Math.max(0, settings.mouseStrength)),
-    mouseRadius: Math.min(220, Math.max(4, settings.mouseRadius)),
-    overlayDecay: Math.min(0.999, Math.max(0.8, settings.overlayDecay)),
+    particleCount: Math.round(clamp(settings.particleCount, PARTICLE_LIMITS.min, PARTICLE_LIMITS.max)),
+    speed: clamp(settings.speed, 5, 100),
+    noiseScale: clamp(settings.noiseScale, 0.0005, 0.008),
+    noiseStrength: clamp(settings.noiseStrength, 0.2, 4),
+    turbulence: Math.round(clamp(settings.turbulence, 1, 6)),
+    trail: clamp(settings.trail, 0, 1),
+    mouseStrength: clamp(settings.mouseStrength, 0, 8),
+    mouseRadius: clamp(settings.mouseRadius, 4, 220),
+    overlayDecay: clamp(settings.overlayDecay, 0.8, 0.999),
     drawFlow: Boolean(settings.drawFlow),
     seed: settings.seed | 0,
     paused: Boolean(settings.paused)
@@ -104,12 +107,14 @@ export function clampManualSettings(settings: SimulationSettings): SimulationSet
 
 export function clampVoiceSettings(settings: VoiceControlSettings): VoiceControlSettings {
   return {
-    sensitivity: Math.min(4, Math.max(0.2, settings.sensitivity)),
-    maxParticlesFromVoice: Math.min(VOICE_PARTICLE_LIMITS.max, Math.max(VOICE_PARTICLE_LIMITS.min, Math.round(settings.maxParticlesFromVoice))),
-    voiceToSpeed: Math.min(200, Math.max(10, settings.voiceToSpeed)),
-    voiceToNoise: Math.min(4, Math.max(0.4, settings.voiceToNoise)),
-    threshold: Math.min(0.2, Math.max(0, settings.threshold)),
-    calmDecay: Math.min(0.995, Math.max(0.9, settings.calmDecay))
+    sensitivity: clamp(settings.sensitivity, 0.2, 4),
+    maxParticlesFromVoice: Math.round(
+      clamp(settings.maxParticlesFromVoice, VOICE_PARTICLE_LIMITS.min, VOICE_PARTICLE_LIMITS.max)
+    ),
+    voiceToSpeed: clamp(settings.voiceToSpeed, 10, 200),
+    voiceToNoise: clamp(settings.voiceToNoise, 0.4, 4),
+    threshold: clamp(settings.threshold, 0, 0.2),
+    calmDecay: clamp(settings.calmDecay, 0.9, 0.995)
   };
 }
 
@@ -124,35 +129,31 @@ export function getManualRuntime(settings: SimulationSettings): RuntimeSimulatio
   };
 }
 
+function getDefaultAppSettings(): AppSettings {
+  return {
+    ...DEFAULT_APP_SETTINGS,
+    manual: { ...DEFAULT_SETTINGS },
+    voice: { ...DEFAULT_VOICE_SETTINGS }
+  };
+}
+
 export function loadAppSettings(): AppSettings {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    return {
-      ...DEFAULT_APP_SETTINGS,
-      manual: { ...DEFAULT_SETTINGS },
-      voice: { ...DEFAULT_VOICE_SETTINGS }
-    };
+  const parsed = readJson<Partial<AppSettings>>(STORAGE_KEY);
+  if (!parsed) {
+    return getDefaultAppSettings();
   }
 
-  try {
-    const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    const activeMode = parsed.activeMode === 'voice' ? 'voice' : 'manual';
-    const theme = parsed.theme === 'sand' ? 'sand' : 'dark';
-    return {
-      activeMode,
-      theme,
-      manual: clampManualSettings({ ...DEFAULT_SETTINGS, ...parsed.manual }),
-      voice: clampVoiceSettings({ ...DEFAULT_VOICE_SETTINGS, ...parsed.voice })
-    };
-  } catch {
-    return {
-      ...DEFAULT_APP_SETTINGS,
-      manual: { ...DEFAULT_SETTINGS },
-      voice: { ...DEFAULT_VOICE_SETTINGS }
-    };
-  }
+  const activeMode = parsed.activeMode === 'voice' ? 'voice' : 'manual';
+  const theme = parsed.theme === 'sand' ? 'sand' : 'dark';
+
+  return {
+    activeMode,
+    theme,
+    manual: clampManualSettings({ ...DEFAULT_SETTINGS, ...parsed.manual }),
+    voice: clampVoiceSettings({ ...DEFAULT_VOICE_SETTINGS, ...parsed.voice })
+  };
 }
 
 export function saveAppSettings(settings: AppSettings): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  writeJson(STORAGE_KEY, settings);
 }

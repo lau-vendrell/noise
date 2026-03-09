@@ -1,17 +1,9 @@
-import { AudioFeatures } from './audioAnalysis';
 import { RuntimeSimulationControls, SimulationSettings, VoiceControlSettings } from '../sim/simulationState';
+import { clamp, ease } from '../utils/math';
+import { AudioFeatures } from './audioAnalysis';
 
 export interface VoiceMappingResult extends RuntimeSimulationControls {
   level: number;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function ease(current: number, target: number, attack: number, release: number): number {
-  const factor = target > current ? attack : release;
-  return current + (target - current) * factor;
 }
 
 export class VoiceMapper {
