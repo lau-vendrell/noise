@@ -2,11 +2,9 @@
 
 An interactive particle field built with Canvas, where noise, motion, and voice gently push the system in different directions.
 
-## The Idea
-
 This started as a way to explore noise as something you can *feel*, not only measure. I wanted a small world that reacts to motion, breath, and small disturbances, somewhere between sketch, instrument, and ongoing experiment.
 
-This project is part of Laura Vendrell's creative coding and interaction research.
+This project is part of my creative coding and interaction research ✨
 
 ## Main Features
 
@@ -25,7 +23,7 @@ This project is part of Laura Vendrell's creative coding and interaction researc
 - Vite
 - HTML5 Canvas 2D
 - Web Audio API (`getUserMedia`, `AnalyserNode`)
-- Plain CSS (modularized by responsibility)
+- Plain CSS
 
 ## Run Locally
 
@@ -72,7 +70,7 @@ If microphone permission is denied, the UI will show that state and the app will
 
 I think of this as a living notebook: a place to test visual behavior, interaction rhythms, and how subtle voice input can shape motion.
 
-It is intentionally open-ended and will keep evolving.
+It is intentionally open-ended and will keep evolving 🧚🏻‍♀️.
 
 ## License
 
