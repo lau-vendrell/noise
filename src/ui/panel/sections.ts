@@ -100,9 +100,6 @@ export function createVoiceStatusSection(onToggleMicrophone: () => void): { cont
   const container = document.createElement('div');
   container.className = 'voice-status';
 
-  const voiceRow = document.createElement('div');
-  voiceRow.className = 'voice-row';
-
   const micButton = document.createElement('button');
   micButton.type = 'button';
   micButton.className = 'secondary-btn mic-btn';
@@ -116,7 +113,6 @@ export function createVoiceStatusSection(onToggleMicrophone: () => void): { cont
 
   micButton.appendChild(micIcon);
   micButton.appendChild(micText);
-  voiceRow.appendChild(micButton);
 
   const meterRow = document.createElement('div');
   meterRow.className = 'meter-row';
@@ -135,7 +131,7 @@ export function createVoiceStatusSection(onToggleMicrophone: () => void): { cont
   meterRow.appendChild(meterLabel);
   meterRow.appendChild(meter);
 
-  container.appendChild(voiceRow);
+  container.appendChild(micButton);
   container.appendChild(meterRow);
 
   return {

@@ -115,11 +115,6 @@ input[type='range']::-moz-range-thumb {
   padding: 0 10px;
 }
 
-.voice-row {
-  display: flex;
-  align-items: center;
-}
-
 .voice-status {
   display: grid;
   gap: 12px;
